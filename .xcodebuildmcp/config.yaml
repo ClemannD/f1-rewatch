@@ -1,0 +1,11 @@
+schemaVersion: 1
+sessionDefaults:
+  projectPath: /Users/dclemann/Code/_apps/f1-rewatch/F1Rewatch.xcodeproj
+  scheme: F1Rewatch
+  configuration: Debug
+  simulatorName: iPhone 17
+  useLatestOS: true
+  derivedDataPath: /Users/dclemann/Code/_apps/f1-rewatch/DerivedData
+  bundleId: com.dclemann.F1Rewatch
+  simulatorId: C37FADF2-C5CA-4143-BA05-A1E46F844152
+  simulatorPlatform: iOS Simulator
