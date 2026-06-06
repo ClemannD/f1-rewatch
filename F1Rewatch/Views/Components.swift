@@ -164,11 +164,7 @@ struct ProgressRing: View {
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
-                    LinearGradient(
-                        colors: [.red, .orange, progressHighlight],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
+                    Color.accentColor,
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
@@ -182,10 +178,6 @@ struct ProgressRing: View {
 
     private var trackColor: Color {
         colorScheme == .light ? Color.black.opacity(0.14) : .white.opacity(0.14)
-    }
-
-    private var progressHighlight: Color {
-        colorScheme == .light ? Color.black.opacity(0.22) : .white
     }
 
     private var percentColor: Color {
