@@ -149,14 +149,26 @@ struct ContentView: View {
     private var seasonPicker: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                SeasonChip(title: "All", isSelected: selectedSeason == nil) {
+                SeasonChip(title: "All", isSelected: selectedSeason == nil, isComplete: false) {
                     selectedSeason = nil
                 }
 
                 ForEach(seasons, id: \.self) { season in
-                    SeasonChip(title: String(season), isSelected: selectedSeason == season) {
-                        selectedSeason = season
-                    }
+                    let seasonRaces = store.allRaces.filter { $0.season == season }
+
+                    SeasonChip(
+                        title: String(season),
+                        isSelected: selectedSeason == season,
+                        isComplete: !seasonRaces.isEmpty && seasonRaces.allSatisfy(store.isWatched),
+                        markAllWatched: {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                                store.markWatched(seasonRaces)
+                            }
+                        },
+                        action: {
+                            selectedSeason = season
+                        }
+                    )
                 }
             }
             .padding(.horizontal, 16)
@@ -190,22 +202,38 @@ struct ContentView: View {
 private struct SeasonChip: View {
     let title: String
     let isSelected: Bool
+    let isComplete: Bool
+    var markAllWatched: (() -> Void)?
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(isSelected ? .white : .white.opacity(0.78))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
-                .background {
-                    Capsule()
-                        .fill(isSelected ? .red.opacity(0.80) : .white.opacity(0.10))
+            HStack(spacing: 5) {
+                if isComplete {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 11, weight: .bold))
                 }
+
+                Text(title)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+            }
+            .foregroundStyle(isSelected ? .white : .white.opacity(0.78))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .background {
+                Capsule()
+                    .fill(isSelected ? .red.opacity(0.80) : .white.opacity(0.10))
+            }
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .contextMenu {
+            if let markAllWatched {
+                Button(action: markAllWatched) {
+                    Label("Mark all as watched", systemImage: "checkmark.circle")
+                }
+            }
+        }
     }
 }
 

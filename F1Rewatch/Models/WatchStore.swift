@@ -26,6 +26,11 @@ final class WatchStore: ObservableObject {
         save()
     }
 
+    func markWatched(_ races: [Race]) {
+        watched.formUnion(races.map(\.id))
+        save()
+    }
+
     func unwatch(_ race: Race) {
         watched.remove(race.id)
         save()

@@ -8,7 +8,7 @@ An iOS app for tracking your progress rewatching every Formula 1 World Champions
 - **Track outlines** — Every race shows the correct circuit layout for that era, with 159 unique track variations
 - **Watch tracking** — Mark races as watched and track your overall progress
 - **Season filtering** — Browse by season or search by race name, circuit, or country
-- **Glass UI** — Built with iOS 26 glass effects and the new automatic app icon system
+- **Glass UI** — Built for iOS 26 with glass effects and the new automatic app icon system
 
 ## Screenshots
 
@@ -16,7 +16,7 @@ An iOS app for tracking your progress rewatching every Formula 1 World Champions
 
 ## Requirements
 
-- iOS 17.0+ (glass effects enhanced on iOS 26)
+- iOS 26.0+
 - Xcode 26+
 
 ## F1TV Catalog
