@@ -221,8 +221,9 @@ struct ContentView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 2)
+            .padding(.vertical, 8)
         }
+        .scrollClipDisabled()
         .scrollIndicators(.hidden)
         .frame(maxWidth: .infinity)
     }
