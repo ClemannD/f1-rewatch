@@ -80,10 +80,15 @@ struct ContentView: View {
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        SettingsView(store: store)
+                    Menu {
+                        NavigationLink {
+                            SettingsView(store: store)
+                        } label: {
+                            Label("Settings", systemImage: "gearshape")
+                        }
                     } label: {
-                        Label("Settings", systemImage: "gearshape")
+                        Image(systemName: "ellipsis")
+                            .accessibilityLabel("More")
                     }
                     .compactGlassButton()
                 }
