@@ -242,8 +242,7 @@ struct ContentView: View {
                     )
                     .contentShape(.interaction, RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .pressFeedback()
-                    .onTapGesture {
+                    .pressFeedback {
                         toggleRace(race)
                     }
                     .contextMenu {
