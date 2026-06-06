@@ -1,8 +1,13 @@
 import Foundation
+import Observation
 
 @MainActor
-final class WatchStore: ObservableObject {
-    @Published private(set) var watched: Set<String> = []
+@Observable
+final class WatchStore {
+    private(set) var watched: Set<String> = []
+
+    let allRaces: [Race]
+    let racesBySeason: [Int: [Race]]
 
     private let watchedKey = "f1-rewatch.watched"
     private let legacyKey = "f1-rewatch.watchedIDs"
@@ -10,6 +15,23 @@ final class WatchStore: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+
+        let today = Self.isoDayFormatter.string(from: Date())
+        let races = RaceCatalog.races
+            .filter { $0.date <= today }
+            .sorted { lhs, rhs in
+                if lhs.date != rhs.date {
+                    return lhs.date > rhs.date
+                }
+                if lhs.season != rhs.season {
+                    return lhs.season > rhs.season
+                }
+                return lhs.round > rhs.round
+            }
+
+        allRaces = races
+        racesBySeason = Dictionary(grouping: races, by: \.season)
+
         load()
     }
 
@@ -31,32 +53,9 @@ final class WatchStore: ObservableObject {
         save()
     }
 
-    func unwatch(_ race: Race) {
-        watched.remove(race.id)
-        save()
-    }
-
     func resetWatched() {
         watched.removeAll()
         save()
-    }
-
-    var watchedCount: Int { watched.count }
-
-    var allRaces: [Race] {
-        let today = Self.isoDayFormatter.string(from: Date())
-
-        return RaceCatalog.races
-            .filter { $0.date <= today }
-            .sorted { lhs, rhs in
-                if lhs.date != rhs.date {
-                    return lhs.date > rhs.date
-                }
-                if lhs.season != rhs.season {
-                    return lhs.season > rhs.season
-                }
-                return lhs.round > rhs.round
-            }
     }
 
     private static let isoDayFormatter: DateFormatter = {
@@ -68,14 +67,12 @@ final class WatchStore: ObservableObject {
     }()
 
     private func load() {
-        // Try boolean watched set first.
         if let data = defaults.data(forKey: watchedKey),
            let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
             watched = decoded
             return
         }
 
-        // Migrate from typed watch progress.
         if let data = defaults.data(forKey: watchedKey),
            let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
             watched = Set(decoded.keys)
@@ -83,7 +80,6 @@ final class WatchStore: ObservableObject {
             return
         }
 
-        // Migrate from legacy Set<String> format.
         if let legacyData = defaults.data(forKey: legacyKey),
            let legacyIDs = try? JSONDecoder().decode(Set<String>.self, from: legacyData) {
             watched = legacyIDs

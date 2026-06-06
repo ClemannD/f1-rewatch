@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("f1-rewatch.region") private var region: Region = .us
     @State private var showResetAlert = false
-    var onResetWatched: (() -> Void)?
+    var store: WatchStore
 
     var body: some View {
         ZStack {
@@ -26,7 +27,7 @@ struct SettingsView: View {
                                                 .font(.title2)
                                             Text(r.displayName)
                                                 .font(.body.weight(.medium))
-                                                .foregroundStyle(.white)
+                                                .foregroundStyle(primaryText)
                                             Spacer()
                                             if r == region {
                                                 Image(systemName: "checkmark")
@@ -60,7 +61,7 @@ struct SettingsView: View {
                     GlassPanel(radius: 20, padding: 16, prominence: .row) {
                         Text("F1 Rewatch is an independent app and is not affiliated with, endorsed by, or associated with Formula 1, F1, Formula One Management, or F1TV. All trademarks belong to their respective owners.")
                             .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.72))
+                            .foregroundStyle(secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
@@ -71,7 +72,7 @@ struct SettingsView: View {
             .scrollIndicators(.hidden)
             .alert("Clear Watched Races?", isPresented: $showResetAlert) {
                 Button("Clear", role: .destructive) {
-                    onResetWatched?()
+                    store.resetWatched()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
@@ -79,7 +80,14 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
-        .preferredColorScheme(.dark)
+    }
+
+    private var primaryText: Color {
+        colorScheme == .light ? Color.black.opacity(0.84) : .white
+    }
+
+    private var secondaryText: Color {
+        colorScheme == .light ? Color.black.opacity(0.62) : .white.opacity(0.72)
     }
 
     private func settingsSection<Content: View>(
@@ -91,7 +99,7 @@ struct SettingsView: View {
             if let title {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.66))
+                    .foregroundStyle(secondaryText)
                     .padding(.horizontal, 8)
             }
 
@@ -100,7 +108,7 @@ struct SettingsView: View {
             if let footer {
                 Text(footer)
                     .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.54))
+                    .foregroundStyle(secondaryText.opacity(0.85))
                     .padding(.horizontal, 8)
             }
         }
@@ -109,6 +117,6 @@ struct SettingsView: View {
 
 #Preview {
     NavigationStack {
-        SettingsView()
+        SettingsView(store: WatchStore())
     }
 }

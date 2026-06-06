@@ -87,6 +87,17 @@ enum F1TVCatalog {
         !content(for: race, region: region).isEmpty
     }
 
+    static func playableLinks(for race: Race, region: Region) -> [F1TVEntry] {
+        content(for: race, region: region).filter { entry in
+            guard let urlString = entry.url else { return false }
+            return URL(string: urlString) != nil
+        }
+    }
+
+    static func hasPlayableLinks(for race: Race, region: Region) -> Bool {
+        !playableLinks(for: race, region: region).isEmpty
+    }
+
     static func seasonReview(for season: Int, region: Region) -> F1TVEntry? {
         loadSeasonReviews(for: region)[season]
     }

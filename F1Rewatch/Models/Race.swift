@@ -11,8 +11,6 @@ struct Race: Identifiable, Codable, Hashable {
     let trackImage: String?
 
     var shortName: String {
-        name
-            .replacingOccurrences(of: "Grand Prix", with: "GP")
-            .replacingOccurrences(of: "Prix", with: "Prix")
+        name.replacingOccurrences(of: "Grand Prix", with: "GP")
     }
 }

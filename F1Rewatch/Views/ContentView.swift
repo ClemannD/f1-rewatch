@@ -11,13 +11,13 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.openURL) private var openURL
     @AppStorage("f1-rewatch.region") private var region: Region = .us
-    @StateObject private var store = WatchStore()
+    @State private var store = WatchStore()
     @State private var selectedSeason: Int?
     @State private var filter: WatchFilter = .all
     @State private var searchText = ""
 
-    private var seasons: [Int] {
-        Array(Set(filterScopedRaces.map(\.season))).sorted(by: >)
+    private var trimmedSearch: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var filterScopedRaces: [Race] {
@@ -30,32 +30,27 @@ struct ContentView: View {
     }
 
     private var filteredRaces: [Race] {
-        store.allRaces.filter { race in
+        filterScopedRaces.filter { race in
             let seasonMatches = selectedSeason == nil || race.season == selectedSeason
-            let filterMatches: Bool
-            switch filter {
-            case .all:
-                filterMatches = true
-            case .f1tv:
-                filterMatches = F1TVCatalog.isAvailable(race, region: region)
-            }
+            let searchMatches = trimmedSearch.isEmpty ||
+                race.name.localizedCaseInsensitiveContains(trimmedSearch) ||
+                race.circuit.localizedCaseInsensitiveContains(trimmedSearch) ||
+                race.country.localizedCaseInsensitiveContains(trimmedSearch)
 
-            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let searchMatches = query.isEmpty ||
-                race.name.localizedCaseInsensitiveContains(query) ||
-                race.circuit.localizedCaseInsensitiveContains(query) ||
-                race.country.localizedCaseInsensitiveContains(query)
-
-            return seasonMatches && filterMatches && searchMatches
+            return seasonMatches && searchMatches
         }
     }
 
+    private var seasons: [Int] {
+        Array(Set(filterScopedRaces.map(\.season))).sorted(by: >)
+    }
+
     private var watchedCount: Int {
-        filterScopedRaces.filter(store.isWatched).count
+        filteredRaces.filter(store.isWatched).count
     }
 
     private var progressTotal: Int {
-        filterScopedRaces.count
+        filteredRaces.count
     }
 
     private var progress: Double {
@@ -86,7 +81,7 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
-                        SettingsView(onResetWatched: { store.resetWatched() })
+                        SettingsView(store: store)
                     } label: {
                         Label("Settings", systemImage: "gearshape")
                     }
@@ -113,12 +108,12 @@ struct ContentView: View {
                         .font(.system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(headerPrimaryText)
 
-                    if let nextRace = filterScopedRaces.first(where: { !store.isWatched($0) }) {
+                    if let nextRace = filteredRaces.first(where: { !store.isWatched($0) }) {
                         Text("Next up: \(String(nextRace.season)) \(nextRace.shortName)")
                             .font(.subheadline)
                             .foregroundStyle(headerSecondaryText)
                             .lineLimit(2)
-                    } else {
+                    } else if progressTotal > 0 {
                         Text("Archive complete")
                             .font(.subheadline)
                             .foregroundStyle(headerSecondaryText)
@@ -146,23 +141,68 @@ struct ContentView: View {
         colorScheme == .light ? Color.black.opacity(0.62) : .white.opacity(0.74)
     }
 
+    private func seasonRaces(for season: Int) -> [Race] {
+        let races = store.racesBySeason[season] ?? []
+        guard filter == .f1tv else { return races }
+        return races.filter { F1TVCatalog.isAvailable($0, region: region) }
+    }
+
+    private func toggleRace(_ race: Race) {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+            store.toggle(race)
+        }
+    }
+
+    @ViewBuilder
+    private func raceContextMenu(for race: Race) -> some View {
+        let f1tvLinks = F1TVCatalog.playableLinks(for: race, region: region)
+
+        if !f1tvLinks.isEmpty {
+            Section("Watch on F1 TV") {
+                ForEach(f1tvLinks) { entry in
+                    Button {
+                        if let urlString = entry.url, let url = URL(string: urlString) {
+                            openURL(url)
+                        }
+                    } label: {
+                        Label(entry.menuLabel, systemImage: entry.type.systemImage)
+                    }
+                }
+            }
+        }
+
+        if store.isWatched(race) {
+            Button(role: .destructive) {
+                toggleRace(race)
+            } label: {
+                Label("Mark unwatched", systemImage: "xmark")
+            }
+        }
+    }
+
     private var seasonPicker: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                SeasonChip(title: "All", isSelected: selectedSeason == nil, isComplete: false) {
+                SeasonChip(
+                    title: "All",
+                    accessibilityLabel: "All seasons",
+                    isSelected: selectedSeason == nil,
+                    isComplete: false
+                ) {
                     selectedSeason = nil
                 }
 
                 ForEach(seasons, id: \.self) { season in
-                    let seasonRaces = store.allRaces.filter { $0.season == season }
+                    let races = seasonRaces(for: season)
 
                     SeasonChip(
                         title: String(season),
+                        accessibilityLabel: "\(season) season",
                         isSelected: selectedSeason == season,
-                        isComplete: !seasonRaces.isEmpty && seasonRaces.allSatisfy(store.isWatched),
-                        markAllWatched: {
+                        isComplete: !races.isEmpty && races.allSatisfy(store.isWatched),
+                        markAllWatched: races.isEmpty ? nil : {
                             withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                                store.markWatched(seasonRaces)
+                                store.markWatched(races)
                             }
                         },
                         action: {
@@ -178,29 +218,61 @@ struct ContentView: View {
         .frame(maxWidth: .infinity)
     }
 
+    @ViewBuilder
     private var raceList: some View {
-        LazyVStack(spacing: 10) {
-            ForEach(filteredRaces) { race in
-                RaceRow(
-                    race: race,
-                    isWatched: store.isWatched(race),
-                    f1tvContent: F1TVCatalog.content(for: race, region: region),
-                    toggle: {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                            store.toggle(race)
-                        }
-                    },
-                    openF1TV: { url in
-                        openURL(url)
+        if filteredRaces.isEmpty {
+            emptyState
+                .padding(.top, 32)
+        } else {
+            LazyVStack(spacing: 10) {
+                ForEach(filteredRaces) { race in
+                    RaceRow(
+                        race: race,
+                        isWatched: store.isWatched(race),
+                        hasPlayableF1TV: F1TVCatalog.hasPlayableLinks(for: race, region: region)
+                    )
+                    .contentShape(.interaction, RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .onTapGesture {
+                        toggleRace(race)
                     }
-                )
+                    .contextMenu {
+                        raceContextMenu(for: race)
+                    }
+                }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var emptyState: some View {
+        if !trimmedSearch.isEmpty {
+            ContentUnavailableView.search(text: searchText)
+        } else if filter == .f1tv {
+            ContentUnavailableView(
+                "No F1TV Races",
+                systemImage: "tv.slash",
+                description: Text("No races in this view are available on F1 TV for your region.")
+            )
+        } else if let selectedSeason {
+            ContentUnavailableView(
+                "No Races",
+                systemImage: "flag.checkered",
+                description: Text("No races found for the \(selectedSeason) season.")
+            )
+        } else {
+            ContentUnavailableView(
+                "No Races",
+                systemImage: "flag.checkered",
+                description: Text("No races are available to track yet.")
+            )
         }
     }
 }
 
 private struct SeasonChip: View {
     let title: String
+    let accessibilityLabel: String
     let isSelected: Bool
     let isComplete: Bool
     var markAllWatched: (() -> Void)?
@@ -212,6 +284,7 @@ private struct SeasonChip: View {
                 if isComplete {
                     Image(systemName: "checkmark")
                         .font(.system(size: 11, weight: .bold))
+                        .accessibilityHidden(true)
                 }
 
                 Text(title)
@@ -226,6 +299,7 @@ private struct SeasonChip: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .contextMenu {
             if let markAllWatched {
@@ -240,95 +314,83 @@ private struct SeasonChip: View {
 private struct RaceRow: View {
     let race: Race
     let isWatched: Bool
-    let f1tvContent: [F1TVEntry]
-    let toggle: () -> Void
-    let openF1TV: (URL) -> Void
+    let hasPlayableF1TV: Bool
 
-    private var f1tvLinks: [F1TVEntry] {
-        f1tvContent.filter { entry in
-            guard let urlString = entry.url else { return false }
-            return URL(string: urlString) != nil
+    @ScaledMetric(relativeTo: .headline) private var badgeSize = 32.0
+    @ScaledMetric(relativeTo: .headline) private var trackSize = 48.0
+
+    var body: some View {
+        rowContent
+            .padding(14)
+            .glassPanelSurface(radius: 20, prominence: .row, interactive: true)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint(isWatched ? "Mark unwatched" : "Mark watched")
+            .accessibilityValue(isWatched ? "Watched" : "Unwatched")
+    }
+
+    private var rowContent: some View {
+        HStack(spacing: 12) {
+            watchBadge
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    Text(String(race.season))
+                        .font(.system(.caption, design: .rounded, weight: .bold))
+                        .foregroundStyle(Color(red: 1.0, green: 0.32, blue: 0.35))
+
+                    Text("Round \(race.round)")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.78))
+
+                    if hasPlayableF1TV {
+                        Image(systemName: "tv.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.red.opacity(0.9))
+                            .accessibilityHidden(true)
+                    }
+                }
+
+                Text(race.shortName)
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+
+                Text("\(race.circuit) · \(race.country)")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.82))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            if let trackImage = race.trackImage {
+                Image("Tracks/\(trackImage)")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(.white.opacity(0.30))
+                    .frame(width: trackSize, height: trackSize)
+                    .accessibilityHidden(true)
+            }
         }
     }
 
-    var body: some View {
-        Button(action: toggle) {
-            GlassPanel(radius: 20, padding: 14, prominence: .row, interactive: true) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(watchBadgeColor)
-                            .frame(width: 32, height: 32)
+    private var accessibilityLabel: String {
+        "\(race.season) \(race.shortName), round \(race.round), \(race.circuit), \(race.country)"
+    }
 
-                        Image(systemName: isWatched ? "checkmark" : "play.fill")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
+    private var watchBadge: some View {
+        ZStack {
+            Circle()
+                .fill(watchBadgeColor)
+                .frame(width: badgeSize, height: badgeSize)
 
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack(spacing: 8) {
-                            Text(String(race.season))
-                                .font(.system(.caption, design: .rounded, weight: .bold))
-                                .foregroundStyle(Color(red: 1.0, green: 0.32, blue: 0.35))
-
-                            Text("Round \(race.round)")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.78))
-
-                            if !f1tvContent.isEmpty {
-                                Image(systemName: "tv.fill")
-                                    .font(.caption2)
-                                    .foregroundStyle(.red.opacity(0.9))
-                            }
-                        }
-
-                        Text(race.shortName)
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .lineLimit(2)
-
-                        Text("\(race.circuit) · \(race.country)")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.82))
-                            .lineLimit(1)
-                    }
-
-                    Spacer(minLength: 8)
-
-                    if let trackImage = race.trackImage {
-                        Image("Tracks/\(trackImage)")
-                            .renderingMode(.template)
-                            .resizable()
-                            .scaledToFit()
-                            .foregroundStyle(.white.opacity(0.30))
-                            .frame(width: 48, height: 48)
-                    }
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            if !f1tvLinks.isEmpty {
-                Section("Watch on F1 TV") {
-                    ForEach(f1tvLinks) { entry in
-                        Button {
-                            if let urlString = entry.url, let url = URL(string: urlString) {
-                                openF1TV(url)
-                            }
-                        } label: {
-                            Label(entry.menuLabel, systemImage: entry.type.systemImage)
-                        }
-                    }
-                }
-            }
-
-            if isWatched {
-                Button(role: .destructive) {
-                    toggle()
-                } label: {
-                    Label("Mark unwatched", systemImage: "xmark")
-                }
-            }
+            Image(systemName: isWatched ? "checkmark" : "play.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.white)
+                .accessibilityHidden(true)
         }
     }
 

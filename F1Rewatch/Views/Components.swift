@@ -30,8 +30,6 @@ struct AppBackground: View {
 }
 
 struct GlassPanel<Content: View>: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     var radius: CGFloat = 28
     var padding: CGFloat = 16
     var prominence: GlassPanelProminence = .standard
@@ -39,15 +37,27 @@ struct GlassPanel<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
+        content
+            .padding(padding)
+            .glassPanelSurface(radius: radius, prominence: prominence, interactive: interactive)
+    }
+}
+
+private struct GlassPanelSurfaceModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var radius: CGFloat
+    var prominence: GlassPanelProminence
+    var interactive: Bool
+
+    func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
 
         if #available(iOS 26.0, *) {
             content
-                .padding(padding)
                 .glassEffect(.regular.tint(prominence.glassTint(for: colorScheme)).interactive(interactive), in: shape)
         } else {
             content
-                .padding(padding)
                 .background {
                     shape
                         .fill(prominence.fill)
@@ -124,6 +134,14 @@ struct ProminentGlassButtonModifier: ViewModifier {
 }
 
 extension View {
+    func glassPanelSurface(
+        radius: CGFloat = 28,
+        prominence: GlassPanelProminence = .standard,
+        interactive: Bool = false
+    ) -> some View {
+        modifier(GlassPanelSurfaceModifier(radius: radius, prominence: prominence, interactive: interactive))
+    }
+
     func compactGlassButton() -> some View {
         modifier(CompactGlassButtonModifier())
     }
@@ -135,12 +153,14 @@ extension View {
 
 struct ProgressRing: View {
     @Environment(\.colorScheme) private var colorScheme
+    @ScaledMetric(relativeTo: .headline) private var ringSize = 72.0
+    @ScaledMetric(relativeTo: .headline) private var lineWidth = 10.0
     let progress: Double
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(trackColor, lineWidth: 10)
+                .stroke(trackColor, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
@@ -149,14 +169,14 @@ struct ProgressRing: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
             Text("\(Int(progress * 100))%")
                 .font(.system(.headline, design: .rounded, weight: .bold))
                 .foregroundStyle(percentColor)
         }
-        .frame(width: 72, height: 72)
+        .frame(width: ringSize, height: ringSize)
         .accessibilityLabel("Progress \(Int(progress * 100)) percent")
     }
 
