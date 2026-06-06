@@ -2,34 +2,42 @@ import SwiftUI
 
 enum WatchFilter: String, CaseIterable, Identifiable {
     case all = "All"
-    case unwatched = "Next"
-    case watched = "Watched"
+    case f1tv = "F1TV"
 
     var id: String { rawValue }
 }
 
 struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openURL) private var openURL
+    @AppStorage("f1-rewatch.region") private var region: Region = .us
     @StateObject private var store = WatchStore()
     @State private var selectedSeason: Int?
     @State private var filter: WatchFilter = .all
     @State private var searchText = ""
 
     private var seasons: [Int] {
-        Array(Set(store.allRaces.map(\.season))).sorted(by: >)
+        Array(Set(filterScopedRaces.map(\.season))).sorted(by: >)
+    }
+
+    private var filterScopedRaces: [Race] {
+        switch filter {
+        case .all:
+            store.allRaces
+        case .f1tv:
+            store.allRaces.filter { F1TVCatalog.isAvailable($0, region: region) }
+        }
     }
 
     private var filteredRaces: [Race] {
         store.allRaces.filter { race in
             let seasonMatches = selectedSeason == nil || race.season == selectedSeason
-            let watchMatches: Bool
+            let filterMatches: Bool
             switch filter {
             case .all:
-                watchMatches = true
-            case .unwatched:
-                watchMatches = !store.isWatched(race)
-            case .watched:
-                watchMatches = store.isWatched(race)
+                filterMatches = true
+            case .f1tv:
+                filterMatches = F1TVCatalog.isAvailable(race, region: region)
             }
 
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -38,17 +46,21 @@ struct ContentView: View {
                 race.circuit.localizedCaseInsensitiveContains(query) ||
                 race.country.localizedCaseInsensitiveContains(query)
 
-            return seasonMatches && watchMatches && searchMatches
+            return seasonMatches && filterMatches && searchMatches
         }
     }
 
     private var watchedCount: Int {
-        store.allRaces.filter(store.isWatched).count
+        filterScopedRaces.filter(store.isWatched).count
+    }
+
+    private var progressTotal: Int {
+        filterScopedRaces.count
     }
 
     private var progress: Double {
-        guard !store.allRaces.isEmpty else { return 0 }
-        return Double(watchedCount) / Double(store.allRaces.count)
+        guard progressTotal > 0 else { return 0 }
+        return Double(watchedCount) / Double(progressTotal)
     }
 
     var body: some View {
@@ -73,17 +85,20 @@ struct ContentView: View {
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("Clear watched races", role: .destructive) {
-                            store.resetWatched()
-                        }
+                    NavigationLink {
+                        SettingsView(onResetWatched: { store.resetWatched() })
                     } label: {
-                        Label("More", systemImage: "ellipsis")
+                        Label("Settings", systemImage: "gearshape")
                     }
                     .compactGlassButton()
                 }
             }
             .searchable(text: $searchText, prompt: "Race, circuit, country")
+            .onChange(of: filter) {
+                if let selected = selectedSeason, !seasons.contains(selected) {
+                    selectedSeason = nil
+                }
+            }
         }
         .tint(.red)
     }
@@ -94,11 +109,11 @@ struct ContentView: View {
                 ProgressRing(progress: progress)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Watched \(watchedCount) of \(store.allRaces.count)")
+                    Text("Watched \(watchedCount) of \(progressTotal)")
                         .font(.system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(headerPrimaryText)
 
-                    if let nextRace = store.allRaces.first(where: { !store.isWatched($0) }) {
+                    if let nextRace = filterScopedRaces.first(where: { !store.isWatched($0) }) {
                         Text("Next up: \(String(nextRace.season)) \(nextRace.shortName)")
                             .font(.subheadline)
                             .foregroundStyle(headerSecondaryText)
@@ -154,11 +169,19 @@ struct ContentView: View {
     private var raceList: some View {
         LazyVStack(spacing: 10) {
             ForEach(filteredRaces) { race in
-                RaceRow(race: race, isWatched: store.isWatched(race)) {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                        store.toggle(race)
+                RaceRow(
+                    race: race,
+                    isWatched: store.isWatched(race),
+                    f1tvContent: F1TVCatalog.content(for: race, region: region),
+                    toggle: {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                            store.toggle(race)
+                        }
+                    },
+                    openF1TV: { url in
+                        openURL(url)
                     }
-                }
+                )
             }
         }
     }
@@ -189,7 +212,16 @@ private struct SeasonChip: View {
 private struct RaceRow: View {
     let race: Race
     let isWatched: Bool
+    let f1tvContent: [F1TVEntry]
     let toggle: () -> Void
+    let openF1TV: (URL) -> Void
+
+    private var f1tvLinks: [F1TVEntry] {
+        f1tvContent.filter { entry in
+            guard let urlString = entry.url else { return false }
+            return URL(string: urlString) != nil
+        }
+    }
 
     var body: some View {
         Button(action: toggle) {
@@ -197,7 +229,7 @@ private struct RaceRow: View {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle()
-                            .fill(isWatched ? .green.opacity(0.92) : .white.opacity(0.18))
+                            .fill(watchBadgeColor)
                             .frame(width: 32, height: 32)
                             .overlay {
                                 Circle()
@@ -218,6 +250,12 @@ private struct RaceRow: View {
                             Text("Round \(race.round)")
                                 .font(.caption)
                                 .foregroundStyle(.white.opacity(0.78))
+
+                            if !f1tvContent.isEmpty {
+                                Image(systemName: "tv.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.red.opacity(0.9))
+                            }
                         }
 
                         Text(race.shortName)
@@ -245,6 +283,69 @@ private struct RaceRow: View {
             }
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if !f1tvLinks.isEmpty {
+                Section("Watch on F1 TV") {
+                    ForEach(f1tvLinks) { entry in
+                        Button {
+                            if let urlString = entry.url, let url = URL(string: urlString) {
+                                openF1TV(url)
+                            }
+                        } label: {
+                            Label(entry.menuLabel, systemImage: entry.type.systemImage)
+                        }
+                    }
+                }
+            }
+
+            if isWatched {
+                Button(role: .destructive) {
+                    toggle()
+                } label: {
+                    Label("Mark unwatched", systemImage: "xmark")
+                }
+            }
+        }
+    }
+
+    private var watchBadgeColor: Color {
+        isWatched ? .green.opacity(0.92) : .white.opacity(0.18)
+    }
+}
+
+private extension F1TVEntry {
+    var menuLabel: String {
+        if let durationText {
+            "\(type.label) (\(durationText))"
+        } else {
+            type.label
+        }
+    }
+
+    var durationText: String? {
+        guard let duration, !duration.isEmpty else { return nil }
+        let parts = duration.split(separator: ":").compactMap { Int($0) }
+
+        let totalMinutes: Int
+        switch parts.count {
+        case 3:
+            totalMinutes = parts[0] * 60 + parts[1]
+        case 2:
+            totalMinutes = parts[0]
+        default:
+            return nil
+        }
+
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+
+        if hours > 0, minutes > 0 {
+            return "\(hours)hr \(minutes)min"
+        }
+        if hours > 0 {
+            return "\(hours)hr"
+        }
+        return "\(minutes)min"
     }
 }
 

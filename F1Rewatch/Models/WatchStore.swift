@@ -2,9 +2,10 @@ import Foundation
 
 @MainActor
 final class WatchStore: ObservableObject {
-    @Published private(set) var watchedIDs: Set<String> = []
+    @Published private(set) var watched: Set<String> = []
 
-    private let watchedKey = "f1-rewatch.watchedIDs"
+    private let watchedKey = "f1-rewatch.watched"
+    private let legacyKey = "f1-rewatch.watchedIDs"
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -13,22 +14,29 @@ final class WatchStore: ObservableObject {
     }
 
     func isWatched(_ race: Race) -> Bool {
-        watchedIDs.contains(race.id)
+        watched.contains(race.id)
     }
 
     func toggle(_ race: Race) {
-        if watchedIDs.contains(race.id) {
-            watchedIDs.remove(race.id)
+        if watched.contains(race.id) {
+            watched.remove(race.id)
         } else {
-            watchedIDs.insert(race.id)
+            watched.insert(race.id)
         }
-        saveWatched()
+        save()
+    }
+
+    func unwatch(_ race: Race) {
+        watched.remove(race.id)
+        save()
     }
 
     func resetWatched() {
-        watchedIDs.removeAll()
-        saveWatched()
+        watched.removeAll()
+        save()
     }
+
+    var watchedCount: Int { watched.count }
 
     var allRaces: [Race] {
         let today = Self.isoDayFormatter.string(from: Date())
@@ -55,16 +63,33 @@ final class WatchStore: ObservableObject {
     }()
 
     private func load() {
-        if let watchedData = defaults.data(forKey: watchedKey),
-           let watched = try? JSONDecoder().decode(Set<String>.self, from: watchedData) {
-            watchedIDs = watched
+        // Try boolean watched set first.
+        if let data = defaults.data(forKey: watchedKey),
+           let decoded = try? JSONDecoder().decode(Set<String>.self, from: data) {
+            watched = decoded
+            return
+        }
+
+        // Migrate from typed watch progress.
+        if let data = defaults.data(forKey: watchedKey),
+           let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
+            watched = Set(decoded.keys)
+            save()
+            return
+        }
+
+        // Migrate from legacy Set<String> format.
+        if let legacyData = defaults.data(forKey: legacyKey),
+           let legacyIDs = try? JSONDecoder().decode(Set<String>.self, from: legacyData) {
+            watched = legacyIDs
+            save()
+            defaults.removeObject(forKey: legacyKey)
         }
     }
 
-    private func saveWatched() {
-        if let data = try? JSONEncoder().encode(watchedIDs) {
+    private func save() {
+        if let data = try? JSONEncoder().encode(watched) {
             defaults.set(data, forKey: watchedKey)
         }
     }
-
 }

@@ -15,6 +15,9 @@
 		100000000000000000000106 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000206 /* Components.swift */; };
 		100000000000000000000107 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000207 /* Assets.xcassets */; };
 		100000000000000000000108 /* Races.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000208 /* Races.json */; };
+		100000000000000000000109 /* F1TVCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000209 /* F1TVCatalog.swift */; };
+		100000000000000000000111 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000211 /* SettingsView.swift */; };
+		100000000000000000000112 /* US-f1-tv-archive-catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000212 /* US-f1-tv-archive-catalog.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +30,9 @@
 		100000000000000000000206 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		100000000000000000000207 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		100000000000000000000208 /* Races.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Races.json; sourceTree = "<group>"; };
+		100000000000000000000209 /* F1TVCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F1TVCatalog.swift; sourceTree = "<group>"; };
+		100000000000000000000211 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		100000000000000000000212 /* US-f1-tv-archive-catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "US-f1-tv-archive-catalog.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +80,7 @@
 				100000000000000000000202 /* Race.swift */,
 				100000000000000000000203 /* RaceCatalog.swift */,
 				100000000000000000000204 /* WatchStore.swift */,
+				100000000000000000000209 /* F1TVCatalog.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -83,6 +90,7 @@
 			children = (
 				100000000000000000000205 /* ContentView.swift */,
 				100000000000000000000206 /* Components.swift */,
+				100000000000000000000211 /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -91,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				100000000000000000000208 /* Races.json */,
+				100000000000000000000212 /* US-f1-tv-archive-catalog.json */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -156,6 +165,7 @@
 			files = (
 				100000000000000000000107 /* Assets.xcassets in Resources */,
 				100000000000000000000108 /* Races.json in Resources */,
+				100000000000000000000112 /* US-f1-tv-archive-catalog.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,6 +182,8 @@
 				100000000000000000000104 /* WatchStore.swift in Sources */,
 				100000000000000000000105 /* ContentView.swift in Sources */,
 				100000000000000000000106 /* Components.swift in Sources */,
+				100000000000000000000109 /* F1TVCatalog.swift in Sources */,
+				100000000000000000000111 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
