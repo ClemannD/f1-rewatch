@@ -158,6 +158,10 @@ struct ContentView: View {
         }
     }
 
+    private func raceRowAccessibilityLabel(for race: Race) -> String {
+        "\(race.season) \(race.shortName), round \(race.round), \(race.circuit), \(race.country)"
+    }
+
     @ViewBuilder
     private func raceContextMenu(for race: Race) -> some View {
         let f1tvLinks = F1TVCatalog.playableLinks(for: race, region: region)
@@ -238,12 +242,18 @@ struct ContentView: View {
                     )
                     .contentShape(.interaction, RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .pressFeedback()
                     .onTapGesture {
                         toggleRace(race)
                     }
                     .contextMenu {
                         raceContextMenu(for: race)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel(raceRowAccessibilityLabel(for: race))
+                    .accessibilityHint(store.isWatched(race) ? "Mark unwatched" : "Mark watched")
+                    .accessibilityValue(store.isWatched(race) ? "Watched" : "Unwatched")
                 }
             }
         }
@@ -327,12 +337,8 @@ private struct RaceRow: View {
     var body: some View {
         rowContent
             .padding(14)
-            .glassPanelSurface(radius: 20, prominence: .row, interactive: true)
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityHint(isWatched ? "Mark unwatched" : "Mark watched")
-            .accessibilityValue(isWatched ? "Watched" : "Unwatched")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassPanelSurface(radius: 20, prominence: .row)
     }
 
     private var rowContent: some View {
@@ -380,10 +386,6 @@ private struct RaceRow: View {
                     .accessibilityHidden(true)
             }
         }
-    }
-
-    private var accessibilityLabel: String {
-        "\(race.season) \(race.shortName), round \(race.round), \(race.circuit), \(race.country)"
     }
 
     private var watchBadge: some View {

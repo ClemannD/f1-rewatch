@@ -133,6 +133,23 @@ struct ProminentGlassButtonModifier: ViewModifier {
     }
 }
 
+private struct PressFeedbackModifier: ViewModifier {
+    @GestureState private var isPressed = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isPressed ? 0.985 : 1.0)
+            .brightness(isPressed ? -0.035 : 0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isPressed)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .updating($isPressed) { _, state, _ in
+                        state = true
+                    }
+            )
+    }
+}
+
 extension View {
     func glassPanelSurface(
         radius: CGFloat = 28,
@@ -148,6 +165,10 @@ extension View {
 
     func prominentGlassButton() -> some View {
         modifier(ProminentGlassButtonModifier())
+    }
+
+    func pressFeedback() -> some View {
+        modifier(PressFeedbackModifier())
     }
 }
 
