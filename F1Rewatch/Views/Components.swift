@@ -88,9 +88,9 @@ enum GlassPanelProminence {
     func glassTint(for colorScheme: ColorScheme) -> Color {
         switch self {
         case .standard:
-            colorScheme == .light ? .black.opacity(0.22) : .white.opacity(0.08)
+            colorScheme == .light ? .black.opacity(0.34) : .white.opacity(0.08)
         case .row:
-            colorScheme == .light ? .black.opacity(0.36) : .black.opacity(0.12)
+            colorScheme == .light ? .black.opacity(0.48) : .black.opacity(0.12)
         }
     }
 
