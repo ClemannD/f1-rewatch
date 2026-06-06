@@ -253,16 +253,12 @@ private struct RaceRow: View {
 
     var body: some View {
         Button(action: toggle) {
-            GlassPanel(radius: 20, padding: 14, prominence: .row) {
+            GlassPanel(radius: 20, padding: 14, prominence: .row, interactive: true) {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle()
                             .fill(watchBadgeColor)
                             .frame(width: 32, height: 32)
-                            .overlay {
-                                Circle()
-                                    .strokeBorder(.white.opacity(0.28), lineWidth: 1)
-                            }
 
                         Image(systemName: isWatched ? "checkmark" : "play.fill")
                             .font(.system(size: 13, weight: .bold))

@@ -33,6 +33,7 @@ struct GlassPanel<Content: View>: View {
     var radius: CGFloat = 28
     var padding: CGFloat = 16
     var prominence: GlassPanelProminence = .standard
+    var interactive: Bool = false
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -41,16 +42,7 @@ struct GlassPanel<Content: View>: View {
         if #available(iOS 26.0, *) {
             content
                 .padding(padding)
-                .background {
-                    shape
-                        .fill(prominence.fill)
-                        .shadow(color: .black.opacity(prominence.shadowOpacity), radius: 18, y: 10)
-                }
-                .overlay {
-                    shape
-                        .strokeBorder(prominence.stroke, lineWidth: 1)
-                }
-                .glassEffect(.regular.tint(prominence.glassTint), in: shape)
+                .glassEffect(.regular.tint(prominence.glassTint).interactive(interactive), in: shape)
         } else {
             content
                 .padding(padding)
@@ -84,9 +76,9 @@ enum GlassPanelProminence {
     var glassTint: Color {
         switch self {
         case .standard:
-            .white.opacity(0.14)
+            .white.opacity(0.08)
         case .row:
-            .black.opacity(0.24)
+            .black.opacity(0.12)
         }
     }
 

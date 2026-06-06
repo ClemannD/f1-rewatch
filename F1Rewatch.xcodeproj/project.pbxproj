@@ -18,6 +18,7 @@
 		100000000000000000000109 /* F1TVCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000209 /* F1TVCatalog.swift */; };
 		100000000000000000000111 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000211 /* SettingsView.swift */; };
 		100000000000000000000112 /* US-f1-tv-archive-catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000212 /* US-f1-tv-archive-catalog.json */; };
+		100000000000000000000113 /* F1Rewatch.icon in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000213 /* F1Rewatch.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 		100000000000000000000209 /* F1TVCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F1TVCatalog.swift; sourceTree = "<group>"; };
 		100000000000000000000211 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		100000000000000000000212 /* US-f1-tv-archive-catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "US-f1-tv-archive-catalog.json"; sourceTree = "<group>"; };
+		100000000000000000000213 /* F1Rewatch.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = F1Rewatch.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 				100000000000000000000405 /* Views */,
 				100000000000000000000406 /* Resources */,
 				100000000000000000000207 /* Assets.xcassets */,
+				100000000000000000000213 /* F1Rewatch.icon */,
 			);
 			path = F1Rewatch;
 			sourceTree = "<group>";
@@ -166,6 +169,7 @@
 				100000000000000000000107 /* Assets.xcassets in Resources */,
 				100000000000000000000108 /* Races.json in Resources */,
 				100000000000000000000112 /* US-f1-tv-archive-catalog.json in Resources */,
+				100000000000000000000113 /* F1Rewatch.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -315,8 +319,7 @@
 		100000000000000000000803 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = F1Rewatch;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -346,8 +349,7 @@
 		100000000000000000000804 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = F1Rewatch;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
