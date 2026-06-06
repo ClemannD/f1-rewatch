@@ -30,6 +30,8 @@ struct AppBackground: View {
 }
 
 struct GlassPanel<Content: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     var radius: CGFloat = 28
     var padding: CGFloat = 16
     var prominence: GlassPanelProminence = .standard
@@ -42,7 +44,7 @@ struct GlassPanel<Content: View>: View {
         if #available(iOS 26.0, *) {
             content
                 .padding(padding)
-                .glassEffect(.regular.tint(prominence.glassTint).interactive(interactive), in: shape)
+                .glassEffect(.regular.tint(prominence.glassTint(for: colorScheme)).interactive(interactive), in: shape)
         } else {
             content
                 .padding(padding)
@@ -73,12 +75,12 @@ enum GlassPanelProminence {
         }
     }
 
-    var glassTint: Color {
+    func glassTint(for colorScheme: ColorScheme) -> Color {
         switch self {
         case .standard:
-            .white.opacity(0.08)
+            colorScheme == .light ? .black.opacity(0.22) : .white.opacity(0.08)
         case .row:
-            .black.opacity(0.12)
+            colorScheme == .light ? .black.opacity(0.36) : .black.opacity(0.12)
         }
     }
 
