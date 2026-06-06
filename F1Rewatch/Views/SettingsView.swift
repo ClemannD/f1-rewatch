@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("f1-rewatch.region") private var region: Region = .us
     @State private var showResetAlert = false
     var store: WatchStore
@@ -80,14 +79,15 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .preferredColorScheme(.dark)
     }
 
     private var primaryText: Color {
-        colorScheme == .light ? Color.black.opacity(0.84) : .white
+        .white
     }
 
     private var secondaryText: Color {
-        colorScheme == .light ? Color.black.opacity(0.62) : .white.opacity(0.72)
+        .white.opacity(0.72)
     }
 
     private func settingsSection<Content: View>(
