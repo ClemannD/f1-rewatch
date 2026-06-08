@@ -63,18 +63,29 @@ struct ContentView: View {
             ZStack {
                 AppBackground()
 
-                ScrollView {
-                    LazyVStack(spacing: 14, pinnedViews: []) {
+                List {
+                    Section {
                         header
-                            .padding(.horizontal, 16)
-                        seasonPicker
-                        raceList
-                            .padding(.horizontal, 16)
                     }
-                    .padding(.top, 12)
-                    .padding(.bottom, 28)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 0, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+
+                    Section {
+                        seasonPicker
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+
+                    Section {
+                        raceList
+                    }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
+                .environment(\.defaultMinListRowHeight, 1)
             }
             .navigationTitle("F1 Rewatch")
             .toolbarTitleDisplayMode(.inlineLarge)
@@ -232,29 +243,33 @@ struct ContentView: View {
     private var raceList: some View {
         if filteredRaces.isEmpty {
             emptyState
+                .frame(maxWidth: .infinity)
                 .padding(.top, 32)
         } else {
-            LazyVStack(spacing: 10) {
-                ForEach(filteredRaces) { race in
-                    RaceRow(
-                        race: race,
-                        isWatched: store.isWatched(race),
-                        hasPlayableF1TV: F1TVCatalog.hasPlayableLinks(for: race, region: region)
-                    )
-                    .contentShape(.interaction, RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .pressFeedback {
-                        toggleRace(race)
-                    }
-                    .contextMenu {
-                        raceContextMenu(for: race)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityLabel(raceRowAccessibilityLabel(for: race))
-                    .accessibilityHint(store.isWatched(race) ? "Mark unwatched" : "Mark watched")
-                    .accessibilityValue(store.isWatched(race) ? "Watched" : "Unwatched")
+            ForEach(filteredRaces) { race in
+                let rowShape = RoundedRectangle(cornerRadius: 20, style: .continuous)
+
+                RaceRow(
+                    race: race,
+                    isWatched: store.isWatched(race),
+                    hasPlayableF1TV: F1TVCatalog.hasPlayableLinks(for: race, region: region)
+                )
+                .contentShape(.interaction, rowShape)
+                .contentShape(.contextMenuPreview, rowShape)
+                .onTapGesture {
+                    toggleRace(race)
                 }
+                .contextMenu {
+                    raceContextMenu(for: race)
+                }
+                .listRowInsets(EdgeInsets(top: 5, leading: 16, bottom: 5, trailing: 16))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(raceRowAccessibilityLabel(for: race))
+                .accessibilityHint(store.isWatched(race) ? "Mark unwatched" : "Mark watched")
+                .accessibilityValue(store.isWatched(race) ? "Watched" : "Unwatched")
             }
         }
     }

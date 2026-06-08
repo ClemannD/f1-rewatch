@@ -133,41 +133,6 @@ struct ProminentGlassButtonModifier: ViewModifier {
     }
 }
 
-private struct PressFeedbackModifier: ViewModifier {
-    var onTap: () -> Void
-    @State private var isPressed = false
-    @State private var pressBeganAt: Date?
-
-    private let tapMaxDuration: TimeInterval = 0.45
-    private let tapMaxDistance: CGFloat = 20
-
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(isPressed ? 0.985 : 1.0)
-            .brightness(isPressed ? -0.035 : 0)
-            .animation(.spring(response: 0.22, dampingFraction: 0.86), value: isPressed)
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in
-                        if !isPressed {
-                            isPressed = true
-                            pressBeganAt = Date()
-                        }
-                    }
-                    .onEnded { value in
-                        isPressed = false
-                        defer { pressBeganAt = nil }
-
-                        guard let began = pressBeganAt else { return }
-                        let elapsed = Date().timeIntervalSince(began)
-                        let distance = hypot(value.translation.width, value.translation.height)
-                        guard elapsed < tapMaxDuration, distance < tapMaxDistance else { return }
-                        onTap()
-                    }
-            )
-    }
-}
-
 extension View {
     func glassPanelSurface(
         radius: CGFloat = 28,
@@ -185,9 +150,6 @@ extension View {
         modifier(ProminentGlassButtonModifier())
     }
 
-    func pressFeedback(onTap: @escaping () -> Void) -> some View {
-        modifier(PressFeedbackModifier(onTap: onTap))
-    }
 }
 
 struct ProgressRing: View {
